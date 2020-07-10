@@ -1,0 +1,200 @@
+---
+title: "Final"
+author: "Saamia"
+date: "7/9/2020"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+1. 
+```{r}
+# clearing environment
+rm(list=ls(all=TRUE))
+# loading libraries
+library(tidycensus)
+library(rio)
+library(data.table)
+library(tidyverse)
+library(WDI)
+library(labelled)
+library(googlesheets4)
+library(varhandle)
+library(ggrepel)
+library(geosphere)
+library(rgeos)
+library(viridis)
+library(mapview)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(devtools)
+library(remotes)
+library(raster)
+library(sp)
+library(sf)
+library(Imap)
+library(pdftools)
+library(tidyr)
+library(tidytext)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(rvest)
+library(xml2)
+
+# connecting api key
+census_api_key("c27810c8b6634b4df374ba6ef4045a7dc16103c6",
+               install = TRUE,
+               overwrite = TRUE)
+readRenviron("~/.Renviron")
+```
+
+
+
+2. GINI variable = B19083_001
+```{r}
+v10 <- load_variables(year = 2010,
+                      'acs5')
+# gini variable B19083_001	
+v15 <- load_variables(year = 2015,
+                      'acs5')
+# gini variable B19083_001	
+
+
+# state level data for both years 
+gini <- get_acs(geography = 'state',            variables = 'B19083_001')
+
+
+
+```
+
+3. 
+```{r}
+inequality_wide <- inequality_panel %>%
+  pivot_wider(id_cols = c(''),
+              names_from = , 
+              values_from = )
+```
+
+4. 
+```{r}
+inequality_long <-inequality_wide %>%
+  pivot_longer(cols = , 
+               names_to = ,
+               names_prefix = ,
+               values_to = , 
+               values_drop_na = FALSE)
+```
+
+5. 
+```{r}
+count(inequality_panel)
+count(inequality_long)
+```
+
+6. 
+```{r}
+inequality_collapsed <- inequality_long %>%
+  group_by() %>%
+  summarize(across(where(is.numeric), sum)) %>%
+  select(-c())
+```
+
+7.
+
+
+8.
+```{r}
+gdp_current = WDI(country = 'all', 
+                     indicator = c('NY.GDP.MKTP.CD'), 
+                     start = 2006, end = 2007, extra = FALSE, cache = NULL)
+```
+
+9.Chose 2015 because that is the year that deflator = 100
+```{r}
+deflator_data = WDI(country = 'all', indicator = c('NY.GDP.DEFL.ZS'), 
+                    start = 2006,
+                    end = 2016, 
+                    extra = FALSE, cache = NULL)
+setnames(deflator_data, 'NY.GDP.DEFL.ZS', 'deflator')
+usd_deflator = subset(deflator_data, country == 'United States')
+subset(usd_deflator, deflator==100)
+rm(deflator_data)
+usd_deflator$country <- NULL
+usd_deflator$iso2c <- NULL
+gdp_deflated = left_join(gdp_current, 
+                          usd_deflator,
+                          by = c('year'))
+gdp_deflated$deflated_amount = gdp_deflated$NY.GDP.MKTP.CD/(gdp_deflated$deflator/100)
+head(gdp_deflated)
+```
+
+
+10. The 3 main components are the library, the UI, and server functions. The UI has inputs and outputs. The server function has 3 rules: storing directions as object, using render, and refering output object to input object. 
+
+11. 
+```{r}
+pdf_final <- pdf_text(pdf = 'https://pdf.usaid.gov/pdf_docs/PA00TNMG.pdf')
+```
+
+12.
+```{r}
+armeniatext <- as.data.frame(pdf_final, stringsAsFactors = FALSE)
+```
+
+13.
+```{r}
+data("stop_words") 
+tidy_armenia <- armeniatext %>%
+  unnest_tokens(word, pdf_final) %>%
+  anti_join(stop_words)
+
+```
+
+14 Top 5 = armenia, political, corruption, governance, democracy
+```{r}
+top_5 <- tidy_armenia %>% 
+  count(word, sort = TRUE) %>%
+  filter(n>130)
+
+```
+
+15. 
+```{r}
+hot100 <- 'https://www.billboard.com/charts/hot-100'
+hot100exam <- read_html(hot100)
+```
+
+
+16. 
+```{r}
+hot100exam
+body_nodes <- hot100exam %>%
+  html_node('body') %>%
+  html_children()
+body_nodes 
+body_nodes %>% 
+  html_children()
+```
+
+17. 
+```{r}
+rank <- hot100exam %>%
+  rvest::html_nodes('body') %>%
+  xml2::xml_find_all("//span[contains(@class, 'chart-element__rank__number')]")
+
+artist <-  hot100exam %>% 
+  rvest::html_nodes('body') %>%
+  xml2::xml_find_all("//span[contains(@class, 'chart-element__information__artist')]")
+
+title <- hot100exam %>%
+  rvest::html_nodes('body') %>%
+  xml2::xml_find_all("//span[contains(@class, 'chart-element__information__song')]")
+
+last_week <- hot100exam %>%
+  rvest::html_nodes('body') %>%
+  xml2::xml_find_all("//span[contains(@class, 'chart-element__information__delta__text text--last')]")
+```
+
